@@ -115,12 +115,12 @@ fn main() {
     let mut i = 0;
 
     let mut frame = 0;
-    let end_frame = 2000;
+    let end_frame = 100;
 
     while frame < end_frame {
         let filepath = format!("./out/out_{}.png", i); // Generate unique file name
 
-        render_img(3024, 1964, zoom, Complex::new(-1.45555, 0.0), &filepath);
+        render_img(3024/10, 1964/10, zoom, Complex::new(-1.44, 0.0), &filepath);
         zoom *= 1.5;
         i += 1;
 
