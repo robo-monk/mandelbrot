@@ -85,7 +85,7 @@ fn run_mandelbrot(z: Complex<f64>, max_iterations: u32) -> MandelbrotResult {
 
     let mut i: u32 = 0;
 
-    const MAX_TURBULANCE: f64 = 1000.0;
+    const MAX_TURBULANCE: f64 = 500.0;
 
     while i < max_iterations {
         let new_mand_value = mandelbrot(last_mand_value, z);
@@ -123,12 +123,12 @@ fn assigned_color(num: u32) -> Rgb<u8> {
 
     // Define fixed saturation and lightness values for a pastel color scheme
     let saturation = 0.5; // 50% for a soft color
-    let lightness = 0.8; // 80% for high brightness
+    let lightness = 0.3; // 80% for high brightness
 
     // Create an HSL color
     let hsl_color = Hsl::new(hue, saturation, lightness);
     let srgb = Srgb::from_color(hsl_color);
-    println!("srgb is {:?}", srgb);
+    // println!("srgb is {:?}", srgb);
     Rgb([(srgb.red*255.0) as u8, (srgb.green*255.0) as u8, (srgb.blue*255.0) as u8])
 }
 
@@ -136,7 +136,48 @@ fn map_value(value: f64, start1: f64, stop1: f64, start2: f64, stop2: f64) -> f6
     (value - start1) / (stop1 - start1) * (stop2 - start2) + start2
 }
 
+fn render_img(width: u32, height: u32, zoom: f64, focal_point: Complex<f64>, samples: u32) {
+    let mut img = RgbImage::new(width, height);
+
+    let min_x = (focal_point.re as i32 - (width as i32)) as f64 / zoom;
+    let max_x = (focal_point.re as i32 + (width as i32)) as f64 / zoom;
+
+    let min_y = (focal_point.im as i32 - (height as i32)) as f64 / zoom;
+    let max_y = (focal_point.im as i32 + (height as i32)) as f64 / zoom;
+
+    let step = (max_x - min_x) * (max_y - min_y) / samples as f64;
+
+    println!("Rendering img with focal point {:?} [x_range: ({}, {}), y_range: ({}, {})] using {} step size", focal_point, min_x, max_x, min_y, max_y, step);
+
+    let mut x = min_x;
+    let mut y = min_y;
+
+    while y < max_y {
+        while x < max_x {
+            let z = Complex::new(x, y);
+
+            let r = run_mandelbrot(z, 40);
+            // println!("iterations: {} | acc: {} | ?: {}", r.iterations, r.acceleration, r.is_in_set);
+
+            let img_x = map_value(x, min_x, max_x, 0.0, width.into()) as u32;
+            let img_y = map_value(y, min_y, max_y, 0.0, height.into()) as u32;
+            let color = assigned_color((1.0*r.acceleration).round() as u32);
+            if r.is_in_set {
+                img.put_pixel(img_x, img_y, color);
+            }
+            x += step;
+        }
+        x = min_x;
+        y += step;
+    }
+
+    img.save("./out.png");
+}
+
 fn main() {
+
+    render_img(1920, 1080, 500.0, Complex::new(0.0, 0.0), 10000);
+    panic!("yo");
 
     let MIN_X = -2.0;
     let MIN_Y = -2.0;
@@ -144,14 +185,23 @@ fn main() {
     let MAX_X = 1.0;
     let MAX_Y = 2.0;
 
+
+    // let MIN_X = -0.2;
+    // let MIN_Y = -0.2;
+
+    // let MAX_X = 0.4;
+    // let MAX_Y = 0.4;
+
+
+
     let mut x = MIN_X;
     let mut y = MIN_Y;
 
-    const X_STEP: f64 = 0.01;
-    const Y_STEP: f64 = 0.01;
+    const X_STEP: f64 = 0.0005;
+    const Y_STEP: f64 = 0.0005;
 
-    let width = (MAX_X - MIN_X) / X_STEP;
-    let height = (MAX_Y - MIN_Y) / Y_STEP;
+    let width = ((MAX_X - MIN_X) / X_STEP).round();
+    let height = ((MAX_Y - MIN_Y) / Y_STEP).round();
 
     println!("image width is {}", width);
     println!("image height is {}", height);
@@ -162,16 +212,15 @@ fn main() {
         while x < MAX_X {
             let z = Complex::new(x, y);
 
-            let r = run_mandelbrot(z, 20);
+            let r = run_mandelbrot(z, 40);
             // println!("iterations: {} | acc: {} | ?: {}", r.iterations, r.acceleration, r.is_in_set);
 
-            // if r.is_in_set {
-                let img_x = map_value(x, MIN_X, MAX_X, 0.0, width) as u32;
-                let img_y = map_value(y, MIN_Y, MAX_Y, 0.0, height) as u32;
-                let color = assigned_color(r.acceleration as u32);
-                // println!("color {:?}", color);
+            let img_x = map_value(x, MIN_X, MAX_X, 0.0, width) as u32;
+            let img_y = map_value(y, MIN_Y, MAX_Y, 0.0, height) as u32;
+            let color = assigned_color((1.0*r.acceleration).round() as u32);
+            if r.is_in_set {
                 img.put_pixel(img_x, img_y, color);
-            // }
+            }
             x += X_STEP;
         }
         x = MIN_X;
