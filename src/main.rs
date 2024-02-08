@@ -4,6 +4,8 @@ use image::{ImageBuffer, Rgb, RgbImage};
 use num::complex::Complex;
 use num::complex::ComplexFloat;
 use std::ops;
+use palette::{Hsl, Srgb, FromColor};
+
 
 // #[derive(PartialEq, PartialOrd, Eq, Copy, Clone, Debug)]
 // struct Complex<T> {
@@ -69,20 +71,21 @@ fn mandelbrot(x: Complex<f64>, z: Complex<f64>) -> Complex<f64>{
 
 struct MandelbrotResult {
     is_in_set: bool, 
-    acceleration: f64,
+    iterations: u32,
     turbulance: f64,
+    acceleration: f64,
     sum: Complex<f64>
 }
 
-fn run_mandelbrot(z: Complex<f64>, max_iterations: u8) -> MandelbrotResult {
+fn run_mandelbrot(z: Complex<f64>, max_iterations: u32) -> MandelbrotResult {
     let mut sum = Complex::new(0.0, 0.0);
     let mut turbulance = 0.0;
     let mut last_mand_value = Complex::new(0.0, 0.0);
     let mut is_in_set = true;
 
-    let mut i = 0;
+    let mut i: u32 = 0;
 
-    const MAX_TURBULANCE: f64 = 250.0;
+    const MAX_TURBULANCE: f64 = 1000.0;
 
     while i < max_iterations {
         let new_mand_value = mandelbrot(last_mand_value, z);
@@ -97,20 +100,11 @@ fn run_mandelbrot(z: Complex<f64>, max_iterations: u8) -> MandelbrotResult {
         i += 1;
     }
 
-    // for i in 0..max_iterations {
-    //     let new_mand_value = mandelbrot(last_mand_value, z);
-    //     turbulance = turbulance + (last_mand_value - new_mand_value).abs();
-    //     last_mand_value = new_mand_value;
-    //     sum = sum + last_mand_value;
-    //     println!(" turbulance: {:?}", turbulance);
-    // }
-    // println!("!");
-    // sum
-
     MandelbrotResult {
         is_in_set,
-        acceleration: 0.0,
+        iterations: i,
         turbulance,
+        acceleration: turbulance / (i as f64),
         sum,
     }
 }
@@ -123,6 +117,21 @@ fn run_mandelbrot(z: Complex<f64>, max_iterations: u8) -> MandelbrotResult {
 // fn map_value(value: u32, start1: u32, stop1: u32, start2: u32, stop2: u32) -> u32 {
 //     (value - start1) / (stop1 - start1) * (stop2 - start2) + start2
 // }
+fn assigned_color(num: u32) -> Rgb<u8> {
+    // Map the number to a hue value (0-360 degrees)
+    let hue = (num % 360) as f32;
+
+    // Define fixed saturation and lightness values for a pastel color scheme
+    let saturation = 0.5; // 50% for a soft color
+    let lightness = 0.8; // 80% for high brightness
+
+    // Create an HSL color
+    let hsl_color = Hsl::new(hue, saturation, lightness);
+    let srgb = Srgb::from_color(hsl_color);
+    println!("srgb is {:?}", srgb);
+    Rgb([(srgb.red*255.0) as u8, (srgb.green*255.0) as u8, (srgb.blue*255.0) as u8])
+}
+
 fn map_value(value: f64, start1: f64, stop1: f64, start2: f64, stop2: f64) -> f64 {
     (value - start1) / (stop1 - start1) * (stop2 - start2) + start2
 }
@@ -154,12 +163,15 @@ fn main() {
             let z = Complex::new(x, y);
 
             let r = run_mandelbrot(z, 20);
+            // println!("iterations: {} | acc: {} | ?: {}", r.iterations, r.acceleration, r.is_in_set);
 
-            if r.is_in_set {
+            // if r.is_in_set {
                 let img_x = map_value(x, MIN_X, MAX_X, 0.0, width) as u32;
                 let img_y = map_value(y, MIN_Y, MAX_Y, 0.0, height) as u32;
-                img.put_pixel(img_x, img_y, Rgb([255, 255, 255]));
-            }
+                let color = assigned_color(r.acceleration as u32);
+                // println!("color {:?}", color);
+                img.put_pixel(img_x, img_y, color);
+            // }
             x += X_STEP;
         }
         x = MIN_X;
