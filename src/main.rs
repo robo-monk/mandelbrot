@@ -174,47 +174,45 @@ fn map_value(value: f64, start1: f64, stop1: f64, start2: f64, stop2: f64) -> f6
 //     img.save("./out.png");
 // }
 
-fn render_img(width: u32, height: u32, zoom: f64, focal_point: Complex<f64>) {
+fn render_img(width: u32, height: u32, zoom: f64, focal_point: Complex<f64>, filepath: &str) {
     let mut img = RgbImage::new(width, height);
 
-    // let min_x = (focal_point.re as isize - (width as isize)) as f64 / zoom;
-    // let max_x = (focal_point.re as isize + (width as isize)) as f64 / zoom;
-
-    // let min_y = (focal_point.im as isize - (height as isize)) as f64 / zoom;
-    // let max_y = (focal_point.im as isize + (height as isize)) as f64 / zoom;
     let aspect_ratio = width as f64 / height as f64;
 
-    let min_x = (focal_point.re - aspect_ratio) / zoom;
-    let max_x = (focal_point.re + aspect_ratio) / zoom;
+    // let min_x = (focal_point.re - aspect_ratio) * 1.0 / zoom;
+    // let max_x = (focal_point.re + aspect_ratio) * 1.0 / zoom;
 
-    let min_y = (focal_point.im - (1.0/aspect_ratio)) / zoom;
-    let max_y = (focal_point.im + (1.0/aspect_ratio)) / zoom;
+    // let min_y = (focal_point.im - (1.0)) * 1.0 / zoom;
+    // let max_y = (focal_point.im + (1.0)) * 1.0 / zoom;
+
+    let min_x = focal_point.re - (aspect_ratio * 1.0 / zoom);
+    let max_x = focal_point.re + (aspect_ratio * 1.0 / zoom);
+
+    let min_y = focal_point.im - ((1.0) * 1.0 / zoom);
+    let max_y = focal_point.im + ((1.0) * 1.0 / zoom);
 
 
-    // let min_x = (focal_point.re as isize - (width as isize)) as f64;
-    // let max_x = (focal_point.re as isize + (width as isize)) as f64;
-
-    // let min_y = (focal_point.im as isize - (height as isize)) as f64;
-    // let max_y = (focal_point.im as isize + (height as isize)) as f64;
-
-    // let samples = width * height as f64;
-
-    // let step = width * height / samples as f64;
 
     println!("Rendering img with focal point {:?} [x_range: ({}, {}), y_range: ({}, {})]", focal_point, min_x, max_x, min_y, max_y);
 
     let mut x = min_x;
     let mut y = min_y;
 
+
     for y in 0..height {
+        let progress = (y as f32 / height as f32) * 100.0;
+
+        if (progress % 5.0).abs() <= 0.001 {
+            println!("{}%", progress.round());
+        }
+
         for x in 0..width {
             let mapped_x = map_value(x.into(), 0.0, width.into(), min_x, max_x);
             let mapped_y = map_value(y.into(), 0.0, height.into(), min_y, max_y);
 
             let z = Complex::new(mapped_x, mapped_y);
-            let r = run_mandelbrot(z, 20);
+            let r = run_mandelbrot(z, 300);
             // println!("[{:?}] iterations: {} | acc: {} | ?: {}", z, r.iterations, r.acceleration, r.is_in_set);
-
 
             let color = assigned_color((1.0*r.acceleration).round() as u32);
             img.put_pixel(x, y, color);
@@ -224,30 +222,17 @@ fn render_img(width: u32, height: u32, zoom: f64, focal_point: Complex<f64>) {
     let mapped_y = map_value(focal_point.im, min_y, max_y, 0.0, height.into()) as u32;
     img.put_pixel(mapped_x, mapped_y, Rgb([255, 0, 0]));
 
-    // while y < max_y {
-    //     while x < max_x {
-    //         let z = Complex::new(x, y);
-
-    //         let r = run_mandelbrot(z, 20);
-    //         println!("[{:?}] iterations: {} | acc: {} | ?: {}", z, r.iterations, r.acceleration, r.is_in_set);
-
-    //         let img_x = map_value(x, min_x, max_x, 0.0, width.into()) as u32;
-    //         let img_y = map_value(y, min_y, max_y, 0.0, height.into()) as u32;
-    //         let color = assigned_color((1.0*r.acceleration).round() as u32);
-    //         if r.is_in_set {
-    //             img.put_pixel(img_x, img_y, color);
-    //         }
-    //         x += step;
-    //     }
-    //     x = min_x;
-    //     y += step;
-    // }
-
-    img.save("./out.png");
+    img.save(filepath);
 }
 
 fn main() {
-    // render_img(1000, 1000, 2.2, Complex::new(-0.15791999999999157, -1.038959999999998), 5000);
-    // render_img(100, 100, 1.0, Complex::new(-0.15791999999999157, -1.038959999999998), 5000);
-    render_img(100, 100, 1.0, Complex::new(-0.2, 0.9));
+    let mut zoom = 1.0;
+    let mut i = 0;
+    while zoom < 9.0 {
+        let filepath = format!("./out/out_{}.png", i); // Generate unique file name
+
+        render_img(500, 300, zoom, Complex::new(0.0, -2.5), &filepath);
+        zoom += 0.2;
+        i += 1;
+    }
 }
