@@ -51,14 +51,11 @@ fn run_mandelbrot(z: Complex<f64>, max_iterations: u32) -> MandelbrotResult {
 }
 
 fn assigned_color(num: u32) -> Rgb<u8> {
-    // Map the number to a hue value (0-360 degrees)
     let hue = (num % 360) as f32;
 
-    // Define fixed saturation and lightness values for a pastel color scheme
-    let saturation = 0.5; // 50% for a soft color
-    let lightness = 0.3; // 80% for high brightness
+    let saturation = 0.5;
+    let lightness = 0.3; // high is bright 
 
-    // Create an HSL color
     let hsl_color = Hsl::new(hue, saturation, lightness);
     let srgb = Srgb::from_color(hsl_color);
     // println!("srgb is {:?}", srgb);
@@ -118,7 +115,7 @@ fn main() {
     let end_frame = 100;
 
     while frame < end_frame {
-        let filepath = format!("./out/out_{}.png", i); // Generate unique file name
+        let filepath = format!("./out/out_{}.png", i);
 
         render_img(3024/10, 1964/10, zoom, Complex::new(-1.44, 0.0), &filepath);
         zoom *= 1.5;
