@@ -1,0 +1,2 @@
+image width is 300
+image height is 400
