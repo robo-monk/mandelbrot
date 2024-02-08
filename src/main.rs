@@ -1,3 +1,6 @@
+extern crate image;
+
+use image::{ImageBuffer, Rgb, RgbImage};
 use std::ops;
 
 #[derive(PartialEq, PartialOrd, Eq, Copy, Clone, Debug)]
@@ -68,46 +71,69 @@ fn run_mandelbrot(z: Complex<f64>, iterations: u8) -> Complex<f64> {
 
 fn is_in_mandelbrot_set(z: Complex<f64>) -> bool {
    let b = run_mandelbrot(z, 255);
-   b.Real > 50.0 || b.Real < -50.0 || b.Imaginary > 50.0 || b.Imaginary < -50.0
+   b.Real > 10.0 || b.Real < -10.0 || b.Imaginary > 10.0 || b.Imaginary < -10.0
 //    b.Real.is_infinite() || b.Imaginary.is_infinite();
 }
 
+// fn map_value(value: u32, start1: u32, stop1: u32, start2: u32, stop2: u32) -> u32 {
+//     (value - start1) / (stop1 - start1) * (stop2 - start2) + start2
+// }
+fn map_value(value: f64, start1: f64, stop1: f64, start2: f64, stop2: f64) -> f64 {
+    (value - start1) / (stop1 - start1) * (stop2 - start2) + start2
+}
+
+
 fn main() {
-    println!("hello");
-    let a = Complex::new(0.02, 0.3);
-    println!("{:?}", run_mandelbrot(a, 100));
+    // let MIN_X = -2.0;
+    // let MIN_Y = -2.0;
 
-    let mut x = -2.0;
-    let mut y = -2.0;
-    let STEP = 0.01;
+    // let MAX_X = 2.0;
+    // let MAX_Y = 2.0;
 
-    while y < 2.0 {
-        while x < 2.0 {
+    let MIN_X = -2.0;
+    let MIN_Y = -2.0;
+
+    let MAX_X = 2.0;
+    let MAX_Y = 2.0;
+
+    let mut x = MIN_X;
+    let mut y = MIN_Y;
+
+    const X_STEP: f64 = 0.005;
+    const Y_STEP: f64 = 0.02;
+
+    let width = (MAX_X - MIN_X) / X_STEP;
+    let height = (MAX_Y - MIN_Y) / Y_STEP;
+
+    println!("image width is {}", width);
+    println!("image height is {}", height);
+
+    // let mut img = ImageBuffer::new(width as u32, height as u32);
+    let mut img = RgbImage::new(width as u32, height as u32);
+    
+    
+    while y < MAX_Y {
+        while x < MAX_X {
             let z = Complex::new(y, x);
-            // print!("{:?}", run_mandelbrot(z, 100));
+
             if is_in_mandelbrot_set(z) {
-                print!("o");
+                // print!("x");
+                let img_x = map_value(x, MIN_X, MAX_X, 0.0, width) as u32;
+                let img_y = map_value(y, MIN_Y, MAX_Y, 0.0, height) as u32;
+                println!("{} {}", img_x, img_y);
+                img.put_pixel(img_x, img_y, Rgb([255, 255, 255]));
+                // img.put_pixel(map_value(x, 0, width, MIN_X, MAX_X), Rgb([255, 255, 255]));
             } else {
-                print!("-");
+                // print!(" ");
+                // img.put_pixel(map_value(x, 0, width, MIN_X, MAX_X), Rgb([0, 0, 0]));
             }
-            // print!("{:?}", is_in_mandelbrot_set(z));
-            x += STEP;
+            x += X_STEP;
         }
-        x = -2.0;
-        y += STEP;
-        println!("  !")
+        x = MIN_X;
+        y += Y_STEP;
+        // println!("");
     }
-
-
-    // for x in MIN_XY.Real..MAX_XY.Real {
-    //     for y in MIN_XY.Imaginary..MAX_XY.Imaginary {
-    //         // current_z.Imaginary += INCR;
-    //         let z = Complex::new(y, x);
-    //         print!("{:?}", run_mandelbrot(z, 100));
-    //     }
-    //     println!("          #")
-    // }
-    // let ROWS = (RANGE_X) * RESOLUTION;
-    // let COLS = (RANGE_Y) * RESOLUTION;
-
+    
+    img.save("./out.png");
+    
 }
